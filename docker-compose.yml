@@ -1,0 +1,57 @@
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    networks:
+      - broker-kafka
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    networks:
+      - broker-kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - 9092:9092
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://host.docker.internal:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+  consumer_nodejs:
+    build:
+      context: ./consumer_nodejs
+    container_name: dev-consumer_nodejs
+    depends_on:
+      - kafka
+    networks:
+      - broker-kafka
+    environment:
+      SERVER_KAFKA: kafka:29092
+    volumes:
+      - ./consumer_nodejs/consumer.js:/consumer/consumer.js
+    command: ["node", "/consumer/consumer.js"]
+
+  producer_python:
+    build:
+      context: ./producer_python
+    container_name: dev-producer_python
+    depends_on:
+      - kafka
+    ports:
+      - 8080:8080
+    networks:
+      - broker-kafka
+    environment:
+      SERVER_KAFKA: kafka:29092
+    volumes:
+      - ./producer_python:/producer
+    command: ["python3", "-u", "/producer/producer.py"]
+
+networks:
+  broker-kafka:

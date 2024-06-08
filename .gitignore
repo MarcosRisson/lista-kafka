@@ -1,0 +1,11 @@
+### Example user template template
+### Example user template
+.vscode
+.env
+consumer_nodejs/node_modules
+
+__pycache__/
+.vscode
+*.log
+
+__init__.py
